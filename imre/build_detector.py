@@ -1,14 +1,13 @@
 import torch
 from torch import nn
 
-from atss_core.structures.image_list import to_image_list
-
-import build_backbone
+from build_backbone import build_backbone
+from module.utils import to_image_list
 from atss.build_atss import ATSSModule
 
 class ATSS(nn.Module):
     def __init__(self, cfg):
-        super(GeneralizedRCNN, self).__init__()
+        super(ATSS, self).__init__()
 
         self.backbone = build_backbone(cfg)
         self.detector = ATSSModule(cfg, self.backbone.out_channels)
@@ -31,3 +30,17 @@ class ATSS(nn.Module):
             return losses
 
         return result
+
+if __name__ == "__main__":
+    
+    from atss.configs.default import _C
+    from copy import deepcopy
+    import torch
+    cfg = deepcopy(_C)
+    cfg.merge_from_file("atss/configs/atss_R_50_FPN_1x.yaml")
+    input = torch.rand([4,3,256,256], dtype=torch.float32)
+    
+    detector = ATSS(cfg)
+    detector.eval()
+    output = detector(input)
+    print(output)

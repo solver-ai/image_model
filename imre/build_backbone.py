@@ -3,8 +3,8 @@ from collections import OrderedDict
 
 from torch import nn
 
-from fpn import FPN
-import resnet
+from backbone.fpn import FPN
+from backbone import resnet
 
 def build_resnet_fpn_p3p7_backbone(cfg):
     # body = resnet.ResNet(cfg)

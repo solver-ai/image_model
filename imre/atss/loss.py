@@ -1,8 +1,9 @@
-import torch
-from torch import nn
 import os
 
-from utils import concat_box_prediction_layers, boxlist_iou, cat_boxlist
+import torch
+from torch import nn
+
+from module.utils import concat_box_prediction_layers, boxlist_iou, cat_boxlist
 
 
 INF = 100000000

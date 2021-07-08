@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from utils import BoxList
+from module.utils import BoxList
 
 
 class BufferList(nn.Module):

@@ -6,7 +6,7 @@ from torch import nn
 from atss.inference import make_atss_postprocessor
 from atss.loss import make_atss_loss_evaluator
 
-from anchor_generator import make_anchor_generator_atss
+from atss.anchor_generator import make_anchor_generator_atss
 
 class Scale(nn.Module):
     def __init__(self, init_value=1.0):
