@@ -12,6 +12,7 @@ import os
 
 import torch
 
+'''
 from build_detector import ATSS
 
 from atss_core.config import cfg
@@ -22,12 +23,66 @@ from atss_core.engine.inference import inference
 from atss_core.engine.trainer import do_train
 from atss_core.utils.checkpoint import DetectronCheckpointer
 from atss_core.utils.collect_env import collect_env_info
-from atss_core.utils.comm import synchronize, \
+from atss_core.utils.comm import synchronize, \al
     get_rank, is_pytorch_1_1_0_or_later
 from atss_core.utils.imports import import_file
 from atss_core.utils.logger import setup_logger
 from atss_core.utils.miscellaneous import mkdir
+'''
 
+
+'''
+A.transforms.PadIfNeeded(min_height=1024, min_width=1024)
+'''
+
+import albumentations as A
+from albumentations.pytorch.transform import ToTensorV2
+
+IMG_TRANSFORMS_PIPELINE = {
+    "train" : A.Compose([
+        A.LongestMaxSize(512),
+        A.PadIfNeeded(
+            min_height=512,
+            min_width=512, 
+            position='top_left', 
+            border_mode=cv2.BORDER_CONSTANT),
+        A.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+        ),
+        ToTensorV2()], bbox_params=A.BboxParams(format='coco')
+    ])
+    
+    "valid" : A.Compose([
+        A.LongestMaxSize(512),
+        A.PadIfNeeded(
+            min_height=512,
+            min_width=512, 
+            position='top_left', 
+            border_mode=cv2.BORDER_CONSTANT),
+        A.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+        ),
+        ToTensorV2()], bbox_params=A.BboxParams(format='coco')
+    ])
+}
+
+from imre.dataset.detection_datasets import COCODataset
+## dataset albumentation에 맞게 수정 필요
+def get_dataset(data_path: str="datasets"):
+    train_dataset = COCODataset(
+        ann_file='datasets/deepfashion2/train.json',
+        root='datsets/deepfashion2/train',
+        transforms=IMG_TRANSFORMS_PIPELINE['train']
+    )
+    valid_dataset = COCODataset(
+        ann_file='datasets/deepfashion2/valid.json', 
+        root='datsets/deepfashion2/valid'
+        transforms=IMG_TRANSFORMS_PIPELINE['valid']
+    )
+    return train_dataset, valid_dataset
+)
 
 def train(cfg, local_rank, distributed):
     model = ATSS(cfg)
