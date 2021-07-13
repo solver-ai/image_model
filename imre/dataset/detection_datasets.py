@@ -1,6 +1,8 @@
+import numpy as np
+
 import torch
 import torchvision
-from module.utils import BoxList
+# from module.utils import BoxList
 
 class COCODataset(torchvision.datasets.coco.CocoDetection):
     def __init__(
@@ -24,19 +26,13 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
 
         anno = [obj for obj in anno if obj["iscrowd"] == 0]
 
-        boxes = [obj["bbox"] for obj in anno]
-        boxes = torch.as_tensor(boxes).reshape(-1, 4)  # guard against no boxes
-        target = BoxList(boxes, img.size, mode="xywh").convert("xyxy")
-
-        classes = [obj["category_id"] for obj in anno]
-        classes = [self.json_category_id_to_contiguous_id[c] for c in classes]
-        classes = torch.tensor(classes)
-        target.add_field("labels", classes)
-
+        target = [obj["bbox"]+[obj["category_id"]] for obj in anno]
         if self._transforms is not None:
-            img, target = self._transforms(img, target)
-
-        return img, target, idx
+            img = np.array(img)
+            transformed = self._transforms(image=img, bboxes=target)
+            image = transformed['image']
+            target = transformed['bboxes']
+        return image, target, idx
 
     def get_img_info(self, index):
         img_id = self.id_to_img_map[index]
@@ -45,10 +41,36 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
 
 
 if __name__ == "__main__":
+    import cv2
+    import albumentations as A
+    from albumentations.pytorch.transforms import ToTensorV2
+    valid_transform = A.Compose([
+        A.LongestMaxSize(512),
+        A.PadIfNeeded(
+            min_height=512,
+            min_width=512, 
+            position='top_left', 
+            border_mode=cv2.BORDER_CONSTANT),
+        A.Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+        ),
+        ToTensorV2()], bbox_params=A.BboxParams(format='coco')
+    )
 
-    valid_dataset = COCODataset("/Users/hansoleom/Desktop/deepfashion2/deepfashion2/valid.json", "/Users/hansoleom/Desktop/deepfashion2/deepfashion2/valid")
-    img, target, idx = next(iter(valid_dataset))
-    print(img)
-    print(target)
-    print(idx)
-    print(len(valid_dataset))
+    valid_dataset = COCODataset(
+        "/Users/hansoleom/Desktop/deepfashion2/deepfashion2/valid.json", 
+        "/Users/hansoleom/Desktop/deepfashion2/deepfashion2/valid",
+        valid_transform
+    )
+    def collate_fn(batch):
+        return tuple(zip(*batch))
+
+
+    # image, target, idx = next(iter(valid_dataset))
+    test_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=4, shuffle=True, num_workers=2, collate_fn=collate_fn)
+    for data in test_dataloader:
+        print(data[0])
+        print(data[1])
+        print(data[2])
+        break

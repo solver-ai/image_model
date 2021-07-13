@@ -69,7 +69,6 @@ IMG_TRANSFORMS_PIPELINE = {
 }
 
 from imre.dataset.detection_datasets import COCODataset
-## dataset albumentation에 맞게 수정 필요
 def get_dataset(data_path: str="datasets"):
     train_dataset = COCODataset(
         ann_file='datasets/deepfashion2/train.json',
@@ -84,6 +83,7 @@ def get_dataset(data_path: str="datasets"):
     return train_dataset, valid_dataset
 )
 
+#### check ####
 def train(cfg, local_rank, distributed):
     model = ATSS(cfg)
     device = torch.device(cfg.MODEL.DEVICE)
