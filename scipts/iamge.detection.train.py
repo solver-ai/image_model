@@ -84,10 +84,61 @@ def get_dataset(data_path: str="datasets"):
 )
 
 #### check ####
+from imre.module import utils
+from imre.model.pl_atss import ATSSModel
 def train(cfg, local_rank, distributed):
-    model = ATSS(cfg)
-    device = torch.device(cfg.MODEL.DEVICE)
-    model.to(device)
+
+    train_dataset, valid_dataset = get_dataset(data_path=cfg.DATA_PATH)
+
+    num_workers = cfg.NUM_WORKSES
+    batch_size = cfg.BATCH_SIZE
+
+    # data loader
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        collate_fn=utils.collate_fn,
+    )
+    valid_loader = torch.utils.data.DataLoader(
+        valid_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        collate_fn=utils.collate_fn,
+    )
+
+    # fearture learning preparation
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    model = ATSSModel(cfg)
+
+    tb_logger = pl_loggers.TensorBoardLogger(
+        "artifacts/tensorboard", name=cfg.NAME #"ATSS_detector_train"
+    )
+
+    print(f"train {cfg.NAME}")
+    num_epochs = cfg.NUM_EPOCHS
+    trainer = pl.Trainer(
+        max_epochs=num_epochs,
+        logger=tb_logger,
+        gpus=cfg.GPUS, 
+    )
+
+    trainer.fit(model, train_loader, valid_loader)
+    return trainer
+
+
+
+
+
+
+
+
+
+
+
+
 
     if cfg.MODEL.USE_SYNCBN:
         assert is_pytorch_1_1_0_or_later(), \
@@ -168,60 +219,13 @@ def run_test(cfg, model, distributed):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
-    parser.add_argument(
-        "--config-file",
-        default="",
-        metavar="FILE",
-        help="path to config file",
-        type=str,
-    )
-    parser.add_argument("--local_rank", type=int, default=0)
-    parser.add_argument(
-        "--skip-test",
-        dest="skip_test",
-        help="Do not test the final model",
-        action="store_true",
-    )
-    parser.add_argument(
-        "opts",
-        help="Modify config options using the command-line",
-        default=None,
-        nargs=argparse.REMAINDER,
-    )
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", type=str, default="train")
     args = parser.parse_args()
-
-    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    args.distributed = num_gpus > 1
-
-    if args.distributed:
-        torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
-        synchronize()
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
-
-    # output_dir = cfg.OUTPUT_DIR
-    # if output_dir:
-    #     mkdir(output_dir)
-
-    # logger = setup_logger("atss_core", output_dir, get_rank())
-    # logger.info("Using {} GPUs".format(num_gpus))
-    # logger.info(args)
-
-    # logger.info("Collecting env info (might take some time)")
-    # logger.info("\n" + collect_env_info())
-
-    # logger.info("Loaded configuration file {}".format(args.config_file))
-    # with open(args.config_file, "r") as cf:
-    #     config_str = "\n" + cf.read()
-    #     logger.info(config_str)
-    # logger.info("Running with config:\n{}".format(cfg))
 
     model = train(cfg, args.local_rank, args.distributed)
 

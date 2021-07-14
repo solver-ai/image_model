@@ -1,6 +1,9 @@
 import torch 
 import torch.nn as nn
 
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
 def conv3x3(in_channels: int, out_channels: int, stride: int = 1, groups: int = 1, dilation: int = 1) -> nn.Conv2d:
     """3x3 convolution with padding"""
     return nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride,
