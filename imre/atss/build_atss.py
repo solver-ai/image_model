@@ -3,11 +3,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-# from atss.inference import make_atss_postprocessor
-# from atss.loss import make_atss_loss_evaluator
-
-# from atss.anchor_generator import make_anchor_generator_atss
-
 class Scale(nn.Module):
     def __init__(self, init_value=1.0):
         super(Scale, self).__init__()
@@ -85,11 +80,6 @@ class ATSSHead(torch.nn.Module):
         cls_tower = []
         bbox_tower = []
         for i in range(cfg.MODEL.ATSS.NUM_CONVS):
-            # if self.cfg.MODEL.ATSS.USE_DCN_IN_TOWER and \
-            #         i == cfg.MODEL.ATSS.NUM_CONVS - 1:
-            #     conv_func = DFConv2d
-            # else:
-            #     conv_func = nn.Conv2d
             conv_func = nn.Conv2d
             cls_tower.append(
                 conv_func(
@@ -166,41 +156,6 @@ class ATSSHead(torch.nn.Module):
             centerness.append(self.centerness(box_tower))
         return logits, bbox_reg, centerness
 
-
-# class ATSSModule(torch.nn.Module):
-
-#     def __init__(self, cfg, in_channels):
-#         super(ATSSModule, self).__init__()
-#         self.cfg = cfg
-#         self.head = ATSSHead(cfg, in_channels)
-#         box_coder = BoxCoder(cfg)
-#         self.loss_evaluator = make_atss_loss_evaluator(cfg, box_coder)
-#         self.box_selector_test = make_atss_postprocessor(cfg, box_coder)
-#         self.anchor_generator = make_anchor_generator_atss(cfg)
-
-#     def forward(self, images, features, targets=None):
-#         box_cls, box_regression, centerness = self.head(features)
-#         anchors = self.anchor_generator(images, features)
- 
-#         if self.training:
-#             return self._forward_train(box_cls, box_regression, centerness, targets, anchors)
-#         else:
-#             return self._forward_test(box_cls, box_regression, centerness, anchors)
-
-#     def _forward_train(self, box_cls, box_regression, centerness, targets, anchors):
-#         loss_box_cls, loss_box_reg, loss_centerness = self.loss_evaluator(
-#             box_cls, box_regression, centerness, targets, anchors
-#         )
-#         losses = {
-#             "loss_cls": loss_box_cls,
-#             "loss_reg": loss_box_reg,
-#             "loss_centerness": loss_centerness
-#         }
-#         return None, losses
-
-#     def _forward_test(self, box_cls, box_regression, centerness, anchors):
-#         boxes = self.box_selector_test(box_cls, box_regression, centerness, anchors)
-#         return boxes, {}
 
 # if __name__ == "__main__":
 #     from config import _C
