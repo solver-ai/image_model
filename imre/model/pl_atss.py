@@ -26,12 +26,12 @@ class ATSSModel(pl.LightningModule):
         return box_cls, box_regression, centerness
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
-        box_cls, box_regression, centerness  = self(x)
+        images, targets = batch
+        box_cls, box_regression, centerness  = self(images)
         anchors = self.anchor_generator(images, features)
 
         loss_box_cls, loss_box_reg, loss_centerness = self.loss_evaluator(
-            box_cls, box_regression, centerness, targets, anchors
+            box_cls, box_regression, centerness, tagets, anchors
         )
 
         self.log('train_loss_cls', loss_box_cls)
@@ -45,8 +45,8 @@ class ATSSModel(pl.LightningModule):
         return losses
     
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        box_cls, box_regression, centerness  = self(x)
+        images, targets = batch
+        box_cls, box_regression, centerness  = self(images)
         anchors = self.anchor_generator(images, features)
         
         boxes = self.box_selector_test(
