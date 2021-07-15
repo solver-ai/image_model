@@ -1,42 +1,12 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
-r"""
-Basic training script for PyTorch
-"""
-
-# Set up custom environment before nearly anything else is imported
-# NOTE: this should be the first import (no not reorder)
-from atss_core.utils.env import setup_environment  # noqa F401 isort:skip
 
 import argparse
 import os
 
-import torch
+# import torch
 
-'''
-from build_detector import ATSS
-
-from atss_core.config import cfg
-from atss_core.data import make_data_loader
-from atss_core.solver import make_lr_scheduler
-from atss_core.solver import make_optimizer
-from atss_core.engine.inference import inference
-from atss_core.engine.trainer import do_train
-from atss_core.utils.checkpoint import DetectronCheckpointer
-from atss_core.utils.collect_env import collect_env_info
-from atss_core.utils.comm import synchronize, \al
-    get_rank, is_pytorch_1_1_0_or_later
-from atss_core.utils.imports import import_file
-from atss_core.utils.logger import setup_logger
-from atss_core.utils.miscellaneous import mkdir
-'''
-
-
-'''
-A.transforms.PadIfNeeded(min_height=1024, min_width=1024)
-'''
-
+import cv2
 import albumentations as A
-from albumentations.pytorch.transform import ToTensorV2
+from albumentations.pytorch.transforms import ToTensorV2
 
 IMG_TRANSFORMS_PIPELINE = {
     "train" : A.Compose([
@@ -51,7 +21,7 @@ IMG_TRANSFORMS_PIPELINE = {
             std=[0.5, 0.5, 0.5],
         ),
         ToTensorV2()], bbox_params=A.BboxParams(format='coco')
-    ])
+    ),
     
     "valid" : A.Compose([
         A.LongestMaxSize(512),
@@ -65,11 +35,13 @@ IMG_TRANSFORMS_PIPELINE = {
             std=[0.5, 0.5, 0.5],
         ),
         ToTensorV2()], bbox_params=A.BboxParams(format='coco')
-    ])
+    )
 }
 
+
 from imre.dataset.detection_datasets import COCODataset
-def get_dataset(data_path: str="datasets"):
+
+def get_dataset(data_path = "datasets"):
     train_dataset = COCODataset(
         ann_file='datasets/deepfashion2/train.json',
         root='datsets/deepfashion2/train',
@@ -77,11 +49,10 @@ def get_dataset(data_path: str="datasets"):
     )
     valid_dataset = COCODataset(
         ann_file='datasets/deepfashion2/valid.json', 
-        root='datsets/deepfashion2/valid'
+        root='datsets/deepfashion2/valid',
         transforms=IMG_TRANSFORMS_PIPELINE['valid']
     )
     return train_dataset, valid_dataset
-)
 
 #### check ####
 from imre.module import utils
@@ -117,7 +88,7 @@ def train(cfg, local_rank, distributed):
         "artifacts/tensorboard", name=cfg.NAME #"ATSS_detector_train"
     )
 
-    print(f"train {cfg.NAME}")
+    print(f'train {cfg.NAME}')
     num_epochs = cfg.NUM_EPOCHS
     trainer = pl.Trainer(
         max_epochs=num_epochs,
@@ -131,51 +102,8 @@ def train(cfg, local_rank, distributed):
 
 
 
-
-
-
-
-
-
-
-
-
-    if cfg.MODEL.USE_SYNCBN:
-        assert is_pytorch_1_1_0_or_later(), \
-            "SyncBatchNorm is only available in pytorch >= 1.1.0"
-        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-
-    optimizer = make_optimizer(cfg, model)
-    scheduler = make_lr_scheduler(cfg, optimizer)
-
-    if distributed:
-        model = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[local_rank], output_device=local_rank,
-            # this should be removed if we update BatchNorm stats
-            broadcast_buffers=False,
-        )
-
-    arguments = {}
-    arguments["iteration"] = 0
-
-    output_dir = cfg.OUTPUT_DIR
-
-    save_to_disk = get_rank() == 0
-    checkpointer = DetectronCheckpointer(
-        cfg, model, optimizer, scheduler, output_dir, save_to_disk
-    )
-    extra_checkpoint_data = checkpointer.load(cfg.MODEL.WEIGHT)
-    arguments.update(extra_checkpoint_data)
-
-    data_loader = make_data_loader(
-        cfg,
-        is_train=True,
-        is_distributed=distributed,
-        start_iter=arguments["iteration"],
-    )
-
-    checkpoint_period = cfg.SOLVER.CHECKPOINT_PERIOD
-
+#### check ####
+'''
     do_train(
         model,
         data_loader,
@@ -188,7 +116,6 @@ def train(cfg, local_rank, distributed):
     )
 
     return model
-
 
 def run_test(cfg, model, distributed):
     if distributed:
@@ -216,7 +143,7 @@ def run_test(cfg, model, distributed):
             output_folder=output_folder,
         )
         synchronize()
-
+'''
 
 def main():
     parser = argparse.ArgumentParser()
@@ -234,4 +161,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    from imre.atss.configs.default import _C
+    print(_C)

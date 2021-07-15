@@ -1,6 +1,6 @@
 import torch
 
-from module.utils import BoxList, cat_boxlist, boxlist_ml_nms, boxlist_iou, permute_and_flatten
+from imre.module.utils import BoxList, cat_boxlist, boxlist_ml_nms, boxlist_iou, permute_and_flatten
 
 class ATSSPostProcessor(torch.nn.Module):
     def __init__(

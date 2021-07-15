@@ -3,7 +3,7 @@ import os
 import torch
 from torch import nn
 
-from module.utils import concat_box_prediction_layers, boxlist_iou, cat_boxlist
+from imre.module.utils import concat_box_prediction_layers, boxlist_iou, cat_boxlist
 
 
 INF = 100000000

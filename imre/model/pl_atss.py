@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 import pytorch_lightning.metrics.functional as plF
 
-from imre.atss.inference import make_atss_loss_evaluator
 from imre.atss.loss import make_atss_loss_evaluator
 from imre.atss.anchor_generator import make_anchor_generator_atss
 
