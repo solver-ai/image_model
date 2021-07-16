@@ -1,4 +1,4 @@
-from module.utils import conv1x1, conv3x3
+from imre.module.utils import conv1x1, conv3x3
 from typing import Any, Callable, List, Optional, Type, Union
 
 import torch

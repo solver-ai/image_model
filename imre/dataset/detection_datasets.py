@@ -24,15 +24,14 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
     def __getitem__(self, idx):
         img, anno = super(COCODataset, self).__getitem__(idx)
 
-        anno = [obj for obj in anno if obj["iscrowd"] == 0]
-
         target = [obj["bbox"]+[obj["category_id"]] for obj in anno]
         if self._transforms is not None:
             img = np.array(img)
             transformed = self._transforms(image=img, bboxes=target)
             image = transformed['image']
-            target = transformed['bboxes']
-        return image, target, idx
+            targets = transformed['bboxes']
+        
+        return image, targets
 
     def get_img_info(self, index):
         img_id = self.id_to_img_map[index]
@@ -55,12 +54,14 @@ if __name__ == "__main__":
             mean=[0.5, 0.5, 0.5],
             std=[0.5, 0.5, 0.5],
         ),
-        ToTensorV2()], bbox_params=A.BboxParams(format='coco')
+        ToTensorV2(),]
+
+        ,bbox_params=A.BboxParams(format='coco')
     )
 
     valid_dataset = COCODataset(
-        "/Users/hansoleom/Desktop/deepfashion2/deepfashion2/valid.json", 
-        "/Users/hansoleom/Desktop/deepfashion2/deepfashion2/valid",
+        "/Users/hansoleom/Desktop/Lightning/image_model/datasets/deepfashion2/valid.json", 
+        "/Users/hansoleom/Desktop/Lightning/image_model/datasets/deepfashion2/valid",
         valid_transform
     )
     def collate_fn(batch):
@@ -72,5 +73,4 @@ if __name__ == "__main__":
     for data in test_dataloader:
         print(data[0])
         print(data[1])
-        print(data[2])
         break

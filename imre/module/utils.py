@@ -260,7 +260,7 @@ def batched_nms(boxes, scores, idxs, iou_threshold):
         return torch.empty((0,), dtype=torch.int64, device=boxes.device)
     max_coordinate = boxes.max()
     offsets = idxs.to(boxes) * (max_coordinate+1)
-    boxes_for_nms = boxes = offset[:, None]
+    boxes_for_nms = boxes + offsets[:, None]
     keep = torch.ops.torchvision.nms(boxes_for_nms, scores, iou_threshold)
     return keep
 
@@ -326,9 +326,9 @@ def boxlist_iou(boxlist1, boxlist2):
     M = len(boxlist2)
 
     area1 = boxlist1.area()
-    area2 = boxlist2.area()
+    area2 = boxlist2[:,2]*boxlist2[:,3]
 
-    box1, box2 = boxlist1.bbox, boxlist2.bbox
+    box1, box2 = boxlist1.bbox, boxlist2
 
     lt = torch.max(box1[:, None, :2], box2[:, :2])  # [N,M,2]
     rb = torch.min(box1[:, None, 2:], box2[:, 2:])  # [N,M,2]
