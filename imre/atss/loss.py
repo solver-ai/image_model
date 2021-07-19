@@ -114,6 +114,10 @@ class ATSSLossComputation(object):
 
             bboxes_per_im = targets_per_im[:,:4]
             labels_per_im = targets_per_im[:,-1]
+
+            bboxes_per_im[:,2] += bboxes_per_im[:,0]
+            bboxes_per_im[:,3] += bboxes_per_im[:, 1]
+            
             anchors_per_im = cat_boxlist(anchors[im_i])
             num_gt = bboxes_per_im.shape[0]
 

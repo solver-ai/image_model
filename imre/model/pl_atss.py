@@ -30,7 +30,6 @@ class ATSSModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         images, targets = batch
-        #### targets type check ####
 
         box_cls, box_regression, centerness, anchors  = self(torch.stack(images))
         
@@ -70,6 +69,6 @@ class ATSSModel(pl.LightningModule):
     #     self.log("avg_val_acc", avg_acc)
     
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, momentum=.9)
+        optimizer = torch.optim.SGD(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, momentum=self.cfg.SOLVER.MOMENTUM)
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 0.1**(epoch // 30))
         return {"optimizer": optimizer, "lr_scheduler":scheduler}
