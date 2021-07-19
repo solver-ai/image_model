@@ -41,7 +41,11 @@ class ATSSModel(pl.LightningModule):
         self.log('train_loss_cls', loss_box_cls)
         self.log('train_loss_reg', loss_box_reg)
         self.log('train_loss_centerness', loss_centerness)
+        print(loss_box_cls)
+        print(loss_box_reg)
+        print(loss_centerness)
         losses = {
+            'loss' : loss_box_cls+loss_box_cls+loss_centerness,
             'loss_cls' : loss_box_cls,
             'loss_reg' : loss_box_reg,
             'loss_centerness' : loss_centerness

@@ -110,7 +110,7 @@ class ATSSLossComputation(object):
         reg_targets = []
         for im_i in range(len(targets)):
             targets_per_im = targets[im_i]
-            targets_per_im = torch.tensor(targets_per_im)
+            targets_per_im = torch.tensor(targets_per_im, dtype=torch.float32)
 
             bboxes_per_im = targets_per_im[:,:4]
             labels_per_im = targets_per_im[:,-1]
