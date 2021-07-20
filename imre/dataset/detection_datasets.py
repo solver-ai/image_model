@@ -60,8 +60,8 @@ if __name__ == "__main__":
     )
 
     valid_dataset = COCODataset(
-        "/Users/hansoleom/Desktop/Lightning/image_model/datasets/deepfashion2/valid.json", 
-        "/Users/hansoleom/Desktop/Lightning/image_model/datasets/deepfashion2/valid",
+        "/Users/hansoleom/Desktop/Lightning/datasets/deepfashion2/valid.json", 
+        "/Users/hansoleom/Desktop/Lightning/datasets/deepfashion2/valid",
         valid_transform
     )
     def collate_fn(batch):

@@ -113,7 +113,7 @@ class ATSSLossComputation(object):
             targets_per_im = torch.tensor(targets_per_im, dtype=torch.float32)
 
             bboxes_per_im = targets_per_im[:,:4]
-            labels_per_im = targets_per_im[:,-1]
+            labels_per_im = targets_per_im[:,-1].type(torch.int32)
 
             bboxes_per_im[:,2] += bboxes_per_im[:,0]
             bboxes_per_im[:,3] += bboxes_per_im[:, 1]
@@ -176,8 +176,13 @@ class ATSSLossComputation(object):
             ious_inf = ious_inf.view(num_gt, -1).t()
 
             anchors_to_gt_values, anchors_to_gt_indexs = ious_inf.max(dim=1)
+            print(anchors_to_gt_indexs)
+            import numpy as np
+            print(np.where(anchors_to_gt_indexs!=0))
+
             cls_labels_per_im = labels_per_im[anchors_to_gt_indexs]
             cls_labels_per_im[anchors_to_gt_values == -INF] = 0
+
             matched_gts = bboxes_per_im[anchors_to_gt_indexs]
 
             reg_targets_per_im = self.box_coder.encode(matched_gts, anchors_per_im.bbox)

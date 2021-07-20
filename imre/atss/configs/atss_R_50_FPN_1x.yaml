@@ -2,6 +2,7 @@ MODEL:
   WEIGHT: "catalog://ImageNetPretrained/MSRA/R-50"
   ATSS_ON: True
   BACKBONE:
+    MODEL_NAME: "resnet50"
     CONV_BODY: "R-50-FPN-RETINANET"
   RESNETS:
     BACKBONE_OUT_CHANNELS: 256

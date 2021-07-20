@@ -8,9 +8,12 @@ class FPN(nn.Module):
         self, in_channels_list, out_channels
     ):
         super(FPN, self).__init__()
-        self.extra = LastLevelP6P7(out_channels, out_channels)
-        self.fpn = torchvision.ops.FeaturePyramidNetwork(in_channels_list, out_channels, self.extra)
-        
+        self.fpn = torchvision.ops.FeaturePyramidNetwork(
+            in_channels_list,
+            out_channels,
+            LastLevelP6P7(out_channels, out_channels)
+        )  
+            
     def forward(self, x:dict) -> list:
         features = self.fpn(x)
         return list(features.values())

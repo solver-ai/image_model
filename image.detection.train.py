@@ -12,8 +12,8 @@ IMG_TRANSFORMS_PIPELINE = {
     "train" : A.Compose([
         A.LongestMaxSize(512),
         A.PadIfNeeded(
-            min_height=512,
-            min_width=512, 
+            min_height=640,
+            min_width=640, 
             position='top_left', 
             border_mode=cv2.BORDER_CONSTANT),
         A.Normalize(
@@ -26,8 +26,8 @@ IMG_TRANSFORMS_PIPELINE = {
     "valid" : A.Compose([
         A.LongestMaxSize(512),
         A.PadIfNeeded(
-            min_height=512,
-            min_width=512, 
+            min_height=640,
+            min_width=640, 
             position='top_left', 
             border_mode=cv2.BORDER_CONSTANT),
         A.Normalize(
@@ -44,13 +44,13 @@ from imre.dataset.detection_datasets import COCODataset
 
 def get_dataset(data_path = "datasets"):
     train_dataset = COCODataset(
-        ann_file='datasets/deepfashion2/train.json',
-        root='datasets/deepfashion2/train',
+        ann_file='../datasets/deepfashion2/train.json',
+        root='../datasets/deepfashion2/train',
         transforms=IMG_TRANSFORMS_PIPELINE['train']
     )
     valid_dataset = COCODataset(
-        ann_file='datasets/deepfashion2/valid.json', 
-        root='datasets/deepfashion2/valid',
+        ann_file='../datasets/deepfashion2/valid.json', 
+        root='../datasets/deepfashion2/valid',
         transforms=IMG_TRANSFORMS_PIPELINE['valid']
     )
     return train_dataset, valid_dataset
@@ -90,7 +90,6 @@ def train(cfg):
     # fearture learning preparation
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = ATSSModel(cfg)
-
     tb_logger = pl_loggers.TensorBoardLogger(
         "artifacts/tensorboard", name="ATSS_detector_train"
     )

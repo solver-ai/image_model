@@ -137,7 +137,7 @@ _C.MODEL.RESNETS.DEFORMABLE_GROUPS = 1
 # ATSS Options
 # ---------------------------------------------------------------------------- #
 _C.MODEL.ATSS = CN()
-_C.MODEL.ATSS.NUM_CLASSES = 81  # the number of classes including background
+_C.MODEL.ATSS.NUM_CLASSES = 6  # the number of classes including background
 
 # Anchor parameter
 _C.MODEL.ATSS.ANCHOR_SIZES = (64, 128, 256, 512, 1024)
