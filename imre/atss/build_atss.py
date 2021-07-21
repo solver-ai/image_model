@@ -7,6 +7,7 @@ from .loss import make_atss_loss_evaluator
 from .inference import make_atss_postprocessor
 from .anchor_generator import make_anchor_generator_atss
 
+
 class Scale(nn.Module):
     def __init__(self, init_value=1.0):
         super(Scale, self).__init__()
@@ -14,6 +15,7 @@ class Scale(nn.Module):
 
     def forward(self, input):
         return input * self.scale
+
 
 class BoxCoder(object):
 
@@ -37,7 +39,8 @@ class BoxCoder(object):
         targets_dy = wy * (gt_ctr_y - ex_ctr_y) / ex_heights
         targets_dw = ww * torch.log(gt_widths / ex_widths)
         targets_dh = wh * torch.log(gt_heights / ex_heights)
-        targets = torch.stack((targets_dx, targets_dy, targets_dw, targets_dh), dim=1)
+        targets = torch.stack(
+            (targets_dx, targets_dy, targets_dw, targets_dh), dim=1)
 
         return targets
 
@@ -78,7 +81,8 @@ class ATSSHead(torch.nn.Module):
         super(ATSSHead, self).__init__()
         self.cfg = cfg
         num_classes = cfg.MODEL.ATSS.NUM_CLASSES - 1
-        num_anchors = len(cfg.MODEL.ATSS.ASPECT_RATIOS) * cfg.MODEL.ATSS.SCALES_PER_OCTAVE
+        num_anchors = len(cfg.MODEL.ATSS.ASPECT_RATIOS) * \
+            cfg.MODEL.ATSS.SCALES_PER_OCTAVE
 
         cls_tower = []
         bbox_tower = []
@@ -177,7 +181,7 @@ class ATSSModule(torch.nn.Module):
     def forward(self, images, features, targets=None):
         box_cls, box_regression, centerness = self.head(features)
         anchors = self.anchor_generator(images, features)
- 
+
         if self.training:
             return self._forward_train(box_cls, box_regression, centerness, targets, anchors)
         else:
@@ -195,9 +199,6 @@ class ATSSModule(torch.nn.Module):
         return None, losses
 
     def _forward_test(self, box_cls, box_regression, centerness, anchors):
-        boxes = self.box_selector_test(box_cls, box_regression, centerness, anchors)
+        boxes = self.box_selector_test(
+            box_cls, box_regression, centerness, anchors)
         return boxes, {}
-
-
-def build_atss(cfg, in_channels):
-    return ATSSModule(cfg, in_channels)

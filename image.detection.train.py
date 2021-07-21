@@ -58,12 +58,11 @@ def get_dataset(data_path = "datasets"):
     return train_dataset, valid_dataset
 
 #### check ####
-from imre.module import utils
 from imre.model.pl_atss import ATSSModel
 import torch 
 from pytorch_lightning import loggers as pl_loggers
 import pytorch_lightning as pl
-
+from imre.module.utils import BatchCollator
 
 
 def train(cfg):
@@ -73,7 +72,7 @@ def train(cfg):
     num_workers = cfg.DATALOADER.NUM_WORKERS
     batch_size = cfg.SOLVER.IMS_PER_BATCH
 
-    from imre.module.utils import BatchCollator
+    
     collator = BatchCollator(cfg.DATALOADER.SIZE_DIVISIBILITY)
 
     # data loader
