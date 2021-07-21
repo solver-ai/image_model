@@ -110,21 +110,17 @@ class ATSSLossComputation(object):
         reg_targets = []
         for im_i in range(len(targets)):
             targets_per_im = targets[im_i]
-            targets_per_im = torch.tensor(targets_per_im, dtype=torch.float32)
-
-            bboxes_per_im = targets_per_im[:,:4]
-            labels_per_im = targets_per_im[:,-1].type(torch.int32)
-
-            bboxes_per_im[:,2] += bboxes_per_im[:,0]
-            bboxes_per_im[:,3] += bboxes_per_im[:, 1]
-            
+            assert targets_per_im.mode == "xyxy"
+            bboxes_per_im = targets_per_im.bbox
+            labels_per_im = targets_per_im.get_field("labels")
             anchors_per_im = cat_boxlist(anchors[im_i])
             num_gt = bboxes_per_im.shape[0]
 
+            
             num_anchors_per_loc = len(self.cfg.MODEL.ATSS.ASPECT_RATIOS) * self.cfg.MODEL.ATSS.SCALES_PER_OCTAVE
 
             num_anchors_per_level = [len(anchors_per_level.bbox) for anchors_per_level in anchors[im_i]]
-            ious = boxlist_iou(anchors_per_im, bboxes_per_im)
+            ious = boxlist_iou(anchors_per_im, targets_per_im)
 
             gt_cx = (bboxes_per_im[:, 2] + bboxes_per_im[:, 0]) / 2.0
             gt_cy = (bboxes_per_im[:, 3] + bboxes_per_im[:, 1]) / 2.0
@@ -176,15 +172,11 @@ class ATSSLossComputation(object):
             ious_inf = ious_inf.view(num_gt, -1).t()
 
             anchors_to_gt_values, anchors_to_gt_indexs = ious_inf.max(dim=1)
-            print(anchors_to_gt_indexs)
-            import numpy as np
-            print(np.where(anchors_to_gt_indexs!=0))
 
             cls_labels_per_im = labels_per_im[anchors_to_gt_indexs]
             cls_labels_per_im[anchors_to_gt_values == -INF] = 0
-
             matched_gts = bboxes_per_im[anchors_to_gt_indexs]
-
+            
             reg_targets_per_im = self.box_coder.encode(matched_gts, anchors_per_im.bbox)
             cls_labels.append(cls_labels_per_im)
             reg_targets.append(reg_targets_per_im)
@@ -242,3 +234,7 @@ class ATSSLossComputation(object):
             centerness_loss = centerness_flatten.sum()
 
         return cls_loss, reg_loss * self.cfg.MODEL.ATSS.REG_LOSS_WEIGHT, centerness_loss
+
+def make_atss_loss_evaluator(cfg, box_coder):
+    loss_evaluator = ATSSLossComputation(cfg, box_coder)
+    return loss_evaluator

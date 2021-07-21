@@ -7,6 +7,8 @@ import os
 import cv2
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
+from imre.atss.configs.default import _C as cfg
+
 
 IMG_TRANSFORMS_PIPELINE = {
     "train" : A.Compose([
@@ -71,20 +73,23 @@ def train(cfg):
     num_workers = cfg.DATALOADER.NUM_WORKERS
     batch_size = cfg.SOLVER.IMS_PER_BATCH
 
+    from imre.module.utils import BatchCollator
+    collator = BatchCollator(cfg.DATALOADER.SIZE_DIVISIBILITY)
+
     # data loader
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=1,
-        collate_fn=utils.collate_fn,
+        num_workers=4,
+        collate_fn=collator,
     )
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=1,
-        collate_fn=utils.collate_fn,
+        num_workers=4,
+        collate_fn=collator,
     )
 
     # fearture learning preparation
@@ -106,18 +111,46 @@ def train(cfg):
     return trainer
 
 
-from imre.atss.configs.default import _C as cfg
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, default="train")
+    parser = argparse.ArgumentParser(description="PyTorch Object Detection Training")
+    parser.add_argument(
+        "--config-file",
+        default="",
+        metavar="FILE",
+        help="path to config file",
+        type=str,
+    )
+    parser.add_argument("--local_rank", type=int, default=0)
+    parser.add_argument(
+        "--skip-test",
+        dest="skip_test",
+        help="Do not test the final model",
+        action="store_true",
+    )
+    parser.add_argument(
+        "opts",
+        help="Modify config options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
+
     args = parser.parse_args()
 
-    cfg.merge_from_file('imre/atss/configs/atss_R_101_FPN_2x.yaml')
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    args.distributed = num_gpus > 1
+
+    if args.distributed:
+        torch.cuda.set_device(args.local_rank)
+        torch.distributed.init_process_group(
+            backend="nccl", init_method="env://"
+        )
+        synchronize()
+
+    cfg.merge_from_file(args.config_file)
+    cfg.merge_from_list(args.opts)
     cfg.freeze()
-    print(cfg)
 
     model = train(cfg)
-
 
 if __name__ == "__main__":
     main()

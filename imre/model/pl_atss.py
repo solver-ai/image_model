@@ -3,72 +3,38 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 import pytorch_lightning.metrics.functional as plF
 
-from imre.atss.build_atss import ATSSHead, BoxCoder
+from imre.atss.build_atss import ATSSModule
 from imre.build_backbone import build_backbone 
-from imre.atss.loss import ATSSLossComputation
-from imre.atss.inference import make_atss_postprocessor
-from imre.atss.anchor_generator import make_anchor_generator_atss
+from imre.module.utils import to_image_list
 
 class ATSSModel(pl.LightningModule):
-    def __init__(self, config, *args, **kwargs):
+    def __init__(self, cfg, *args, **kwargs):
         super(ATSSModel, self).__init__()
-        
-        self.cfg = config
-        self.backbone = build_backbone(self.cfg)
-        self.head = ATSSHead(self.cfg, self.backbone.out_channels)
-
-        box_coder = BoxCoder(self.cfg)
-        self.loss_evaluator = ATSSLossComputation(self.cfg, box_coder)
-        self.box_selector_test = make_atss_postprocessor(self.cfg, box_coder)
-        self.anchor_generator = make_anchor_generator_atss(self.cfg)
-        
-    def forward(self, x):
-        features = self.backbone(x)
-        box_cls, box_regression, centerness = self.head(features)
-        anchors = self.anchor_generator(x, features)
-        return box_cls, box_regression, centerness, anchors
+        self.cfg = cfg
+        self.backbone = build_backbone(cfg)
+        self.rpn = ATSSModule(cfg, self.backbone.out_channels)
+    
+    def forward(self, x, y):
+        x = to_image_list(x)
+        features = self.backbone(x.tensors)
+        proposals, proposal_losses = self.rpn(x, features, y)
+        return proposals, proposal_losses
 
     def training_step(self, batch, batch_idx):
-        images, targets = batch
+        images, targets, _ = batch
 
-        box_cls, box_regression, centerness, anchors  = self(torch.stack(images))
+        _, loss_dict = self(images, targets)
+        loss_dict['loss'] = sum(loss for loss in loss_dict.values())
+        print(loss_dict)
         
-        loss_box_cls, loss_box_reg, loss_centerness = self.loss_evaluator(
-            box_cls, box_regression, centerness, targets, anchors
-        )
-
-        self.log('train_loss_cls', loss_box_cls)
-        self.log('train_loss_reg', loss_box_reg)
-        self.log('train_loss_centerness', loss_centerness)
-        print(loss_box_cls)
-        print(loss_box_reg)
-        print(loss_centerness)
-        losses = {
-            'loss' : loss_box_cls+loss_box_cls+loss_centerness,
-            'loss_cls' : loss_box_cls,
-            'loss_reg' : loss_box_reg,
-            'loss_centerness' : loss_centerness
-        }
-        return losses
+        return loss_dict
     
     def validation_step(self, batch, batch_idx):
-        images, targets = batch
-        box_cls, box_regression, centerness, anchors  = self(torch.stack(images))
-
-        boxes = self.box_selector_test(
-            box_cls, box_regression, centerness, anchors
-        )
-
+        images, targets, _ = batch
+        boxes, _ = self(images, targets)
         return boxes
 
-    #### check (mAP 실행?)
-    # def validation_epoch_end(self, outputs):
-    #     avg_loss = torch.stack([o["loss"] for o in outputs]).mean(-1)
-    #     avg_acc = torch.stack([o["acc"] for o in outputs]).mean(-1)
-    #     self.log("avg_val_loss", avg_loss)
-    #     self.log("avg_val_acc", avg_acc)
-    
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, momentum=self.cfg.SOLVER.MOMENTUM)
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda epoch: 0.1**(epoch // 30))
-        return {"optimizer": optimizer, "lr_scheduler":scheduler}
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}

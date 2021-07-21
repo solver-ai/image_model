@@ -3,6 +3,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from .loss import make_atss_loss_evaluator
+from .inference import make_atss_postprocessor
+from .anchor_generator import make_anchor_generator_atss
+
 class Scale(nn.Module):
     def __init__(self, init_value=1.0):
         super(Scale, self).__init__()
@@ -66,7 +70,6 @@ class BoxCoder(object):
         pred_boxes[:, 1::4] = pred_ctr_y - 0.5 * (pred_h - 1)
         pred_boxes[:, 2::4] = pred_ctr_x + 0.5 * (pred_w - 1)
         pred_boxes[:, 3::4] = pred_ctr_y + 0.5 * (pred_h - 1)
-
         return pred_boxes
 
 
@@ -81,6 +84,7 @@ class ATSSHead(torch.nn.Module):
         bbox_tower = []
         for i in range(cfg.MODEL.ATSS.NUM_CONVS):
             conv_func = nn.Conv2d
+
             cls_tower.append(
                 conv_func(
                     in_channels,
@@ -151,25 +155,49 @@ class ATSSHead(torch.nn.Module):
             logits.append(self.cls_logits(cls_tower))
 
             bbox_pred = self.scales[l](self.bbox_pred(box_tower))
+            if self.cfg.MODEL.ATSS.REGRESSION_TYPE == 'POINT':
+                bbox_pred = F.relu(bbox_pred)
             bbox_reg.append(bbox_pred)
 
             centerness.append(self.centerness(box_tower))
         return logits, bbox_reg, centerness
 
 
-# if __name__ == "__main__":
-#     from config import _C
-#     from copy import deepcopy
-#     from PIL import Image
-#     import torch
-#     cfg = deepcopy(_C)
-#     cfg.merge_from_file("atss/configs/atss_R_50_FPN_1x.yaml")
+class ATSSModule(torch.nn.Module):
 
-#     image = torch.rand(4,3,256,256)
-#     from utils import to_image_list
-#     image = to_image_list(image)
-#     input = [torch.rand(4,256,32,32), torch.rand(4,256,16,16), torch.rand(4,256,8,8), torch.rand(4,256,4,4), torch.rand(4,256,2,2)]
-#     detector = ATSSModule(cfg, 256)
-#     detector.eval()
-#     a = detector(image, input)
-#     print(a)
+    def __init__(self, cfg, in_channels):
+        super(ATSSModule, self).__init__()
+        self.cfg = cfg
+        self.head = ATSSHead(cfg, in_channels)
+        box_coder = BoxCoder(cfg)
+        self.loss_evaluator = make_atss_loss_evaluator(cfg, box_coder)
+        self.box_selector_test = make_atss_postprocessor(cfg, box_coder)
+        self.anchor_generator = make_anchor_generator_atss(cfg)
+
+    def forward(self, images, features, targets=None):
+        box_cls, box_regression, centerness = self.head(features)
+        anchors = self.anchor_generator(images, features)
+ 
+        if self.training:
+            return self._forward_train(box_cls, box_regression, centerness, targets, anchors)
+        else:
+            return self._forward_test(box_cls, box_regression, centerness, anchors)
+
+    def _forward_train(self, box_cls, box_regression, centerness, targets, anchors):
+        loss_box_cls, loss_box_reg, loss_centerness = self.loss_evaluator(
+            box_cls, box_regression, centerness, targets, anchors
+        )
+        losses = {
+            "loss_cls": loss_box_cls,
+            "loss_reg": loss_box_reg,
+            "loss_centerness": loss_centerness
+        }
+        return None, losses
+
+    def _forward_test(self, box_cls, box_regression, centerness, anchors):
+        boxes = self.box_selector_test(box_cls, box_regression, centerness, anchors)
+        return boxes, {}
+
+
+def build_atss(cfg, in_channels):
+    return ATSSModule(cfg, in_channels)

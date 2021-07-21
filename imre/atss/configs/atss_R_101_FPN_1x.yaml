@@ -1,5 +1,4 @@
 MODEL:
-  META_ARCHITECTURE: "GeneralizedRCNN"
   WEIGHT: "catalog://ImageNetPretrained/MSRA/R-101"
   RPN_ONLY: True
   ATSS_ON: True
