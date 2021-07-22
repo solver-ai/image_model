@@ -118,6 +118,14 @@ class BoxList(object):
 
         return area
 
+    def to(self, device):
+        bbox = BoxList(self.bbox.to(device), self.size, self.mode)
+        for k, v in self.extra_fields.items():
+            if hasattr(v, "to"):
+                v = v.to(device)
+            bbox.add_field(k, v)
+        return bbox
+
     def __repr__(self):
         s = self.__class__.__name__ + "("
         s += "num_boxes={}, ".format(len(self))
