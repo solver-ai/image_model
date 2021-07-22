@@ -4,7 +4,6 @@ from yacs.config import CfgNode as CN
 
 _C = CN()
 
-
 # -----------------------------------------------------------------------------
 # Dataset
 # -----------------------------------------------------------------------------
@@ -96,6 +95,7 @@ _C.SOLVER.WEIGHT_DECAY_BIAS = 0
 
 _C.SOLVER.GAMMA = 0.1
 _C.SOLVER.STEPS = (30000,)
+_C.SOLVER.NUM_GPUS = None
 _C.SOLVER.IMS_PER_BATCH = 1
 
 
