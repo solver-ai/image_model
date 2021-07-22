@@ -95,7 +95,7 @@ def train(cfg):
     trainer = pl.Trainer(
         max_epochs=num_epochs,
         logger=tb_logger,
-        gpus=cfg.NUM_GPUS, 
+        gpus=cfg.SOLVER.NUM_GPUS, 
     )
 
     trainer.fit(model, train_loader, valid_loader)
