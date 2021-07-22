@@ -12,8 +12,7 @@ model_urls = {
     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
     'resnext50_32x4d': 'https://download.pytorch.org/models/resnext50_32x4d-7cdf4587.pth',
     'resnext101_32x8d': 'https://download.pytorch.org/models/resnext101_32x8d-8ba56ff5.pth',
-    'wide_resnet50_2': 'https://download.pytorch.org/models/wide_resnet50_2-95faca4d.pth',
-    'wide_resnet101_2': 'https://download.pytorch.org/models/wide_resnet101_2-32ee1156.pth',
+    'resnext101_64x4d': '',
 }
 
 
@@ -317,6 +316,12 @@ def resnext101_32x8d(pretrained: bool = False, progress: bool = True, **kwargs: 
     kwargs['groups'] = 32
     kwargs['width_per_group'] = 8
     return _resnet('resnext101_32x8d', Bottleneck, [3, 4, 23, 3],
+                   pretrained, progress, **kwargs)
+
+def resnext101_64x4d(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
+    kwargs['groups'] = 64
+    kwargs['width_per_group'] = 4
+    return _resnet('resnext101_64x4d', Bottleneck, [3, 4, 23, 3],
                    pretrained, progress, **kwargs)
 
 

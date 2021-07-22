@@ -4,3 +4,5 @@ albumentations==1.0.1
 opencv-python
 yaml
 pycocotools
+pytorch-lightning
+albumentations
