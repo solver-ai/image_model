@@ -1,13 +1,18 @@
 
 import argparse
-import os
 
-# import torch
+from imre.atss.configs.default import _C as cfg
+from imre.dataset.detection_datasets import COCODataset
+from imre.model.pl_atss import ATSSModel
+from imre.module.utils import BatchCollator
+
+import torch
+import pytorch_lightning as pl
+from pytorch_lightning import loggers as pl_loggers
 
 import cv2
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
-from imre.atss.configs.default import _C as cfg
 
 
 IMG_TRANSFORMS_PIPELINE = {
@@ -41,9 +46,6 @@ IMG_TRANSFORMS_PIPELINE = {
 }
 
 
-
-from imre.dataset.detection_datasets import COCODataset
-
 def get_dataset(data_path = "datasets"):
     train_dataset = COCODataset(
         ann_file='../datasets/deepfashion2/train.json',
@@ -57,13 +59,6 @@ def get_dataset(data_path = "datasets"):
     )
     return train_dataset, valid_dataset
 
-#### check ####
-from imre.model.pl_atss import ATSSModel
-import torch 
-from pytorch_lightning import loggers as pl_loggers
-import pytorch_lightning as pl
-from imre.module.utils import BatchCollator
-
 
 def train(cfg):
 
@@ -72,27 +67,24 @@ def train(cfg):
     num_workers = cfg.DATALOADER.NUM_WORKERS
     batch_size = cfg.SOLVER.IMS_PER_BATCH
 
-    
-    collator = BatchCollator(cfg.DATALOADER.SIZE_DIVISIBILITY)
 
     # data loader
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=4,
-        collate_fn=collator,
+        num_workers=num_workers,
+        collate_fn=BatchCollator,
     )
     valid_loader = torch.utils.data.DataLoader(
         valid_dataset,
         batch_size=batch_size,
         shuffle=False,
-        num_workers=4,
-        collate_fn=collator,
+        num_workers=num_workers,
+        collate_fn=BatchCollator,
     )
 
     # fearture learning preparation
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = ATSSModel(cfg)
     tb_logger = pl_loggers.TensorBoardLogger(
         "artifacts/tensorboard", name="ATSS_detector_train"
@@ -119,31 +111,13 @@ def main():
         help="path to config file",
         type=str,
     )
-    parser.add_argument("--local_rank", type=int, default=0)
-    parser.add_argument(
-        "--skip-test",
-        dest="skip_test",
-        help="Do not test the final model",
-        action="store_true",
-    )
     parser.add_argument(
         "opts",
-        help="Modify config options using the command-line",
         default=None,
         nargs=argparse.REMAINDER,
     )
 
     args = parser.parse_args()
-
-    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    args.distributed = num_gpus > 1
-
-    if args.distributed:
-        torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
-        synchronize()
 
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)

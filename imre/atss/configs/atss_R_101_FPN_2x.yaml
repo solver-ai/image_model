@@ -7,6 +7,7 @@ MODEL:
   RESNETS:
     BACKBONE_OUT_CHANNELS: 256
   ATSS:
+    NUM_CLASSES: 6  # the number of classes including background
     ANCHOR_SIZES: (64, 128, 256, 512, 1024) # 8S
     ASPECT_RATIOS: (1.0,)
     SCALES_PER_OCTAVE: 1

@@ -12,7 +12,6 @@ INF = 100000000
 def get_num_gpus():
     return int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
 
-
 def reduce_sum(tensor):
     if get_num_gpus() <= 1:
         return tensor
@@ -55,7 +54,6 @@ class SigmoidFocalLoss(nn.Module):
 
 
 class ATSSLossComputation(object):
-
     def __init__(self, cfg, box_coder):
         self.cfg = cfg
         self.cls_loss_func = SigmoidFocalLoss(cfg.MODEL.ATSS.LOSS_GAMMA, cfg.MODEL.ATSS.LOSS_ALPHA)

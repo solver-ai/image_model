@@ -25,11 +25,13 @@ class COCODataset(torchvision.datasets.coco.CocoDetection):
     def __getitem__(self, idx):
         img, anno = super(COCODataset, self).__getitem__(idx)
         target = [obj["bbox"]+[obj["category_id"]] for obj in anno]
+
         if self._transforms is not None:
             img = np.array(img)
             transformed = self._transforms(image=img, bboxes=target)
             image = transformed['image']
             targets = transformed['bboxes']
+
         targets = torch.tensor(targets)
         target = BoxList(targets[:,:-1], (640,640), mode="xywh").convert("xyxy")
         target.add_field("labels", targets[:,-1])

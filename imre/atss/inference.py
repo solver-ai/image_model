@@ -1,5 +1,4 @@
 import torch
-
 from imre.module.utils import BoxList, cat_boxlist, boxlist_ml_nms, boxlist_iou, permute_and_flatten
 
 class ATSSPostProcessor(torch.nn.Module):
@@ -89,10 +88,6 @@ class ATSSPostProcessor(torch.nn.Module):
 
         return boxlists
 
-    # TODO very similar to filter_results from PostProcessor
-    # but filter_results is per image
-    # TODO Yang: solve this issue in the future. No good solution
-    # right now.
     def select_over_all_levels(self, boxlists):
         num_images = len(boxlists)
         results = []

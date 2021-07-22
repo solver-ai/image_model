@@ -1,25 +1,12 @@
 import torch 
 import torch.nn as nn
 
-def collate_fn(batch):
-    return tuple(zip(*batch))
-
-class BatchCollator(object):
-    """
-    From a list of samples from the dataset,
-    returns the batched images and targets.
-    This should be passed to the DataLoader
-    """
-
-    def __init__(self, size_divisible=0):
-        self.size_divisible = size_divisible
-
-    def __call__(self, batch):
-        transposed_batch = list(zip(*batch))
-        images = to_image_list(transposed_batch[0], self.size_divisible)
-        targets = transposed_batch[1]
-        img_ids = transposed_batch[2]
-        return images, targets, img_ids
+def BatchCollator(batch):
+    transposed_batch = list(zip(*batch))
+    images = torch.stack(transposed_batch[0])
+    targets = transposed_batch[1]
+    img_ids = transposed_batch[2]
+    return images, targets, img_ids
 
 
 class BoxList(object):
@@ -131,17 +118,6 @@ class BoxList(object):
 
         return area
 
-    def copy_with_fields(self, fields, skip_missing=False):
-        bbox = BoxList(self.bbox, self.size, self.mode)
-        if not isinstance(fields, (list, tuple)):
-            fields = [fields]
-        for field in fields:
-            if self.has_field(field):
-                bbox.add_field(field, self.get_field(field))
-            elif not skip_missing:
-                raise KeyError("Field '{}' not found in {}".format(field, self))
-        return bbox
-
     def __repr__(self):
         s = self.__class__.__name__ + "("
         s += "num_boxes={}, ".format(len(self))
@@ -214,11 +190,9 @@ def boxlist_iou(boxlist1, boxlist2):
     M = len(boxlist2)
 
     area1 = boxlist1.area()
-    w = boxlist2[:, 2] - boxlist2[:, 0]
-    h = boxlist2[:, 3] - boxlist2[:, 1]
-    area2 = w*h
+    area2 = boxlist2.area()
 
-    box1, box2 = boxlist1.bbox, boxlist2
+    box1, box2 = boxlist1.bbox, boxlist2.bbox
 
     lt = torch.max(box1[:, None, :2], box2[:, :2])  # [N,M,2]
     rb = torch.min(box1[:, None, 2:], box2[:, 2:])  # [N,M,2]
@@ -231,87 +205,9 @@ def boxlist_iou(boxlist1, boxlist2):
     iou = inter / (area1[:, None] + area2 - inter)
     return iou
 
+
 def permute_and_flatten(layer, N, A, C, H, W):
     layer = layer.view(N, -1, C, H, W)
     layer = layer.permute(0, 3, 4, 1, 2)
     layer = layer.reshape(N, -1, C)
     return layer
-
-
-
-
-
-
-
-
-
-
-
-
-
-class ImageList(object):
-    """
-    Structure that holds a list of images (of possibly
-    varying sizes) as a single tensor.
-    This works by padding the images to the same size,
-    and storing in a field the original sizes of each image
-    """
-
-    def __init__(self, tensors, image_sizes):
-        """
-        Arguments:
-            tensors (tensor)
-            image_sizes (list[tuple[int, int]])
-        """
-        self.tensors = tensors
-        self.image_sizes = image_sizes
-
-    def to(self, *args, **kwargs):
-        cast_tensor = self.tensors.to(*args, **kwargs)
-        return ImageList(cast_tensor, self.image_sizes)
-
-
-def to_image_list(tensors, size_divisible=0):
-    """
-    tensors can be an ImageList, a torch.Tensor or
-    an iterable of Tensors. It can't be a numpy array.
-    When tensors is an iterable of Tensors, it pads
-    the Tensors with zeros so that they have the same
-    shape
-    """
-    if isinstance(tensors, torch.Tensor) and size_divisible > 0:
-        tensors = [tensors]
-
-    if isinstance(tensors, ImageList):
-        return tensors
-    elif isinstance(tensors, torch.Tensor):
-        # single tensor shape can be inferred
-        if tensors.dim() == 3:
-            tensors = tensors[None]
-        assert tensors.dim() == 4
-        image_sizes = [tensor.shape[-2:] for tensor in tensors]
-        return ImageList(tensors, image_sizes)
-    elif isinstance(tensors, (tuple, list)):
-        max_size = tuple(max(s) for s in zip(*[img.shape for img in tensors]))
-
-        # TODO Ideally, just remove this and let me model handle arbitrary
-        # input sizs
-        if size_divisible > 0:
-            import math
-
-            stride = size_divisible
-            max_size = list(max_size)
-            max_size[1] = int(math.ceil(max_size[1] / stride) * stride)
-            max_size[2] = int(math.ceil(max_size[2] / stride) * stride)
-            max_size = tuple(max_size)
-
-        batch_shape = (len(tensors),) + max_size
-        batched_imgs = tensors[0].new(*batch_shape).zero_()
-        for img, pad_img in zip(tensors, batched_imgs):
-            pad_img[: img.shape[0], : img.shape[1], : img.shape[2]].copy_(img)
-
-        image_sizes = [im.shape[-2:] for im in tensors]
-
-        return ImageList(batched_imgs, image_sizes)
-    else:
-        raise TypeError("Unsupported type for to_image_list: {}".format(type(tensors)))

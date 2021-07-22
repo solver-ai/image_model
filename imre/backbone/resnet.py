@@ -261,10 +261,6 @@ class ResNet(nn.Module):
         x = self.layer4(x)
         out['layer4']=x
 
-        # x = self.avgpool(x)
-        # x = torch.flatten(x, 1)
-        # x = self.fc(x)
-
         return out
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -1,9 +1,8 @@
 MODEL:
-  META_ARCHITECTURE: "GeneralizedRCNN"
   WEIGHT: "catalog://ImageNetPretrained/FAIR/20171220/X-101-64x4d"
-  RPN_ONLY: True
   ATSS_ON: True
   BACKBONE:
+    MODEL_NAME: "resnet101"
     CONV_BODY: "R-101-FPN-RETINANET"
   RESNETS:
     STRIDE_IN_1X1: False
@@ -13,6 +12,7 @@ MODEL:
   RETINANET:
     USE_C5: False
   ATSS:
+    NUM_CLASSES: 6  # the number of classes including background
     ANCHOR_SIZES: (64, 128, 256, 512, 1024) # 8S
     ASPECT_RATIOS: (1.0,)
     SCALES_PER_OCTAVE: 1

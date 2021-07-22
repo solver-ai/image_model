@@ -18,7 +18,6 @@ class Scale(nn.Module):
 
 
 class BoxCoder(object):
-
     def __init__(self, cfg):
         self.cfg = cfg
 
@@ -142,9 +141,6 @@ class ATSSHead(torch.nn.Module):
         prior_prob = cfg.MODEL.ATSS.PRIOR_PROB
         bias_value = -math.log((1 - prior_prob) / prior_prob)
         torch.nn.init.constant_(self.cls_logits.bias, bias_value)
-        if self.cfg.MODEL.ATSS.REGRESSION_TYPE == 'POINT':
-            assert num_anchors == 1, "regressing from a point only support num_anchors == 1"
-            torch.nn.init.constant_(self.bbox_pred.bias, 4)
 
         self.scales = nn.ModuleList([Scale(init_value=1.0) for _ in range(5)])
 
@@ -159,8 +155,6 @@ class ATSSHead(torch.nn.Module):
             logits.append(self.cls_logits(cls_tower))
 
             bbox_pred = self.scales[l](self.bbox_pred(box_tower))
-            if self.cfg.MODEL.ATSS.REGRESSION_TYPE == 'POINT':
-                bbox_pred = F.relu(bbox_pred)
             bbox_reg.append(bbox_pred)
 
             centerness.append(self.centerness(box_tower))

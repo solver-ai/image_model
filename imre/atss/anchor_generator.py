@@ -8,10 +8,6 @@ from torch import nn
 from imre.module.utils import BoxList
 
 class BufferList(nn.Module):
-    """
-    Similar to nn.ParameterList, but for buffers
-    """
-
     def __init__(self, buffers=None):
         super(BufferList, self).__init__()
         if buffers is not None:
@@ -31,11 +27,6 @@ class BufferList(nn.Module):
 
 
 class AnchorGenerator(nn.Module):
-    """
-    For a set of image sizes and feature maps, computes a set
-    of anchors
-    """
-
     def __init__(
         self,
         sizes=(128, 256, 512),
@@ -112,7 +103,8 @@ class AnchorGenerator(nn.Module):
         grid_sizes = [feature_map.shape[-2:] for feature_map in feature_maps]
         anchors_over_all_feature_maps = self.grid_anchors(grid_sizes)
         anchors = []
-        for i, (image_height, image_width) in enumerate(image_list.image_sizes):
+        for i, image in enumerate(image_list):
+            _, image_height, image_width = image.size()
             anchors_in_image = []
             for anchors_per_feature_map in anchors_over_all_feature_maps:
                 boxlist = BoxList(
@@ -144,57 +136,6 @@ def make_anchor_generator_atss(config):
         tuple(new_anchor_sizes), aspect_ratios, anchor_strides, straddle_thresh
     )
     return anchor_generator
-
-# Copyright (c) 2017-present, Facebook, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-##############################################################################
-#
-# Based on:
-# --------------------------------------------------------
-# Faster R-CNN
-# Copyright (c) 2015 Microsoft
-# Licensed under The MIT License [see LICENSE for details]
-# Written by Ross Girshick and Sean Bell
-# --------------------------------------------------------
-
-
-# Verify that we compute the same anchors as Shaoqing's matlab implementation:
-#
-#    >> load output/rpn_cachedir/faster_rcnn_VOC2007_ZF_stage1_rpn/anchors.mat
-#    >> anchors
-#
-#    anchors =
-#
-#       -83   -39   100    56
-#      -175   -87   192   104
-#      -359  -183   376   200
-#       -55   -55    72    72
-#      -119  -119   136   136
-#      -247  -247   264   264
-#       -35   -79    52    96
-#       -79  -167    96   184
-#      -167  -343   184   360
-
-# array([[ -83.,  -39.,  100.,   56.],
-#        [-175.,  -87.,  192.,  104.],
-#        [-359., -183.,  376.,  200.],
-#        [ -55.,  -55.,   72.,   72.],
-#        [-119., -119.,  136.,  136.],
-#        [-247., -247.,  264.,  264.],
-#        [ -35.,  -79.,   52.,   96.],
-#        [ -79., -167.,   96.,  184.],
-#        [-167., -343.,  184.,  360.]])
 
 
 def generate_anchors(
