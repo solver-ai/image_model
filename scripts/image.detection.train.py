@@ -23,10 +23,7 @@ IMG_TRANSFORMS_PIPELINE = {
             min_width=640, 
             position='top_left', 
             border_mode=cv2.BORDER_CONSTANT),
-        A.Normalize(
-            mean=[0.5, 0.5, 0.5],
-            std=[0.5, 0.5, 0.5],
-        ),
+        A.Normalize(),
         ToTensorV2()], bbox_params=A.BboxParams(format='coco')
     ),
     
@@ -37,10 +34,7 @@ IMG_TRANSFORMS_PIPELINE = {
             min_width=640, 
             position='top_left', 
             border_mode=cv2.BORDER_CONSTANT),
-        A.Normalize(
-            mean=[0.5, 0.5, 0.5],
-            std=[0.5, 0.5, 0.5],
-        ),
+        A.Normalize(),
         ToTensorV2()], bbox_params=A.BboxParams(format='coco')
     )
 }
