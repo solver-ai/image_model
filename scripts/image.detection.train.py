@@ -90,6 +90,7 @@ def train(cfg):
         max_epochs=num_epochs,
         logger=tb_logger,
         gpus=cfg.SOLVER.NUM_GPUS, 
+        accelerator='ddp'
     )
 
     trainer.fit(model, train_loader, valid_loader)

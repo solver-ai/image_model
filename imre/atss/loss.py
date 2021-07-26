@@ -20,6 +20,10 @@ def reduce_sum(tensor):
     dist.all_reduce(tensor, op=dist.reduce_op.SUM)
     return tensor
 
+import torch
+from torch import nn
+import numpy as np
+
 class SigmoidFocalLoss(nn.Module):
     def __init__(self, gamma, alpha):
         super(SigmoidFocalLoss, self).__init__()
@@ -27,30 +31,19 @@ class SigmoidFocalLoss(nn.Module):
         self.alpha = alpha
 
     def forward(self, logits, targets):
-        device = logits.device
-        loss = self.sigmoid_focal_loss(logits, targets, self.gamma, self.alpha)
-        return loss.sum()
-
-    def __repr__(self):
-        tmpstr = self.__class__.__name__ + "("
-        tmpstr += "gamma=" + str(self.gamma)
-        tmpstr += ", alpha=" + str(self.alpha)
-        tmpstr += ")"
-        return tmpstr
-
-    def sigmoid_focal_loss(self, logits, targets, gamma, alpha):
         num_classes = logits.shape[1]
-        gamma = gamma
-        alpha = alpha
         dtype = targets.dtype
         device = targets.device
         class_range = torch.arange(1, num_classes+1, dtype=dtype, device=device).unsqueeze(0)
 
         t = targets.unsqueeze(1)
         p = torch.sigmoid(logits)
-        term1 = (1 - p) ** gamma * torch.log(p)
-        term2 = p ** gamma * torch.log(1 - p)
-        return -(t == class_range).float() * term1 * alpha - ((t != class_range) * (t >= 0)).float() * term2 * (1 - alpha)
+        p = torch.clamp(p, min=1e-20)
+        term1 = (1 - p) ** self.gamma * torch.log(p)
+        term2 = p ** self.gamma * torch.log(1 - p)
+
+        loss = -(t == class_range).float() * term1 * self.alpha - ((t != class_range) * (t >= 0)).float() * term2 * (1 - self.alpha)
+        return loss.sum()
 
 
 class ATSSLossComputation(object):

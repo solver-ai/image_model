@@ -33,8 +33,7 @@ def build_resnet_fpn_p3p7_backbone(cfg):
     body = resnet.resnet101(cfg)
     in_channels_stage2 = cfg.MODEL.RESNETS.RES2_OUT_CHANNELS
     out_channels = cfg.MODEL.RESNETS.BACKBONE_OUT_CHANNELS
-    in_channels_p6p7 = in_channels_stage2 * 8
-    fpn = FPN(
+    fpn = fpn_module.FPN(
         in_channels_list=[
             in_channels_stage2 * 2,
             in_channels_stage2 * 4,
@@ -48,4 +47,4 @@ def build_resnet_fpn_p3p7_backbone(cfg):
 
 
 def build_backbone(cfg):
-    return build_resnet_fpn_p3p7_backbone(cfg)
+    return build_resnet_fpn_p3p7_backbone(cfg)a

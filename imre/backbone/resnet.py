@@ -12,7 +12,6 @@ model_urls = {
     'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
     'resnext50_32x4d': 'https://download.pytorch.org/models/resnext50_32x4d-7cdf4587.pth',
     'resnext101_32x8d': 'https://download.pytorch.org/models/resnext101_32x8d-8ba56ff5.pth',
-    'resnext101_64x4d': '',
 }
 
 
@@ -249,16 +248,16 @@ class ResNet(nn.Module):
 
     def _forward_impl(self, x: torch.Tensor) -> torch.Tensor:
         # See note [TorchScript super()]
-        out = {}
+        out = []   
         x = self.stem(x)
 
         x = self.layer1(x)
         x = self.layer2(x)
-        out['layer2']=x
+        out.append(x)
         x = self.layer3(x)
-        out['layer3']=x
+        out.append(x)
         x = self.layer4(x)
-        out['layer4']=x
+        out.append(x)
 
         return out
 
