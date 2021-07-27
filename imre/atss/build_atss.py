@@ -154,8 +154,6 @@ class ATSSHead(torch.nn.Module):
             logits.append(self.cls_logits(cls_tower))
 
             bbox_pred = self.scales[l](self.bbox_pred(box_tower))
-            if self.cfg.MODEL.ATSS.REGRESSION_TYPE == 'POINT':
-                bbox_pred = F.relu(bbox_pred)
             bbox_reg.append(bbox_pred)
 
             centerness.append(self.centerness(box_tower))

@@ -81,7 +81,7 @@ def train(cfg):
     # fearture learning preparation
     model = ATSSModel(cfg)
     tb_logger = pl_loggers.TensorBoardLogger(
-        "artifacts/tensorboard", name="ATSS_detector_train"
+        "lightning_logs/tensorboard", name="ATSS_detector_train"
     )
 
     print(f'train ATSS_detector_train')

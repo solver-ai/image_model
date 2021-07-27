@@ -78,7 +78,7 @@ class ATSSModel(pl.LightningModule):
 
         return boxes, losses
 
-    def validation_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
+    def validation_epoch_end(self, outputs):
         print(outputs)
 
         return 

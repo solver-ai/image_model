@@ -8,7 +8,6 @@ from imre.module.utils import concat_box_prediction_layers, boxlist_iou, cat_box
 
 INF = 100000000
 
-
 def get_num_gpus():
     return int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
 
@@ -20,6 +19,30 @@ def reduce_sum(tensor):
     tensor = tensor.clone()
     dist.all_reduce(tensor, op=dist.reduce_op.SUM)
     return tensor
+
+
+class SigmoidFocalLoss(nn.Module):
+    def __init__(self, gamma, alpha):
+        super(SigmoidFocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+
+    def forward(self, logits, targets):
+        num_classes = logits.shape[1]
+        dtype = targets.dtype
+        device = targets.device
+        class_range = torch.arange(1, num_classes+1, dtype=dtype, device=device).unsqueeze(0)
+
+        t = targets.unsqueeze(1)
+        p = torch.sigmoid(logits)
+        p = torch.clamp(p, min=1e-20)
+        term1 = (1 - p) ** self.gamma * torch.log(p)
+        term2 = p ** self.gamma * torch.log(1 - p)
+
+        loss = -(t == class_range).float() * term1 * self.alpha - ((t != class_range) * (t >= 0)).float() * term2 * (1 - self.alpha)
+    
+            
+        return loss.sum()
 
 
 class ATSSLossComputation(object):
