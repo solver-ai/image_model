@@ -18,6 +18,7 @@ class Scale(nn.Module):
 
 
 class BoxCoder(object):
+
     def __init__(self, cfg):
         self.cfg = cfg
 
@@ -38,8 +39,7 @@ class BoxCoder(object):
         targets_dy = wy * (gt_ctr_y - ex_ctr_y) / ex_heights
         targets_dw = ww * torch.log(gt_widths / ex_widths)
         targets_dh = wh * torch.log(gt_heights / ex_heights)
-        targets = torch.stack(
-            (targets_dx, targets_dy, targets_dw, targets_dh), dim=1)
+        targets = torch.stack((targets_dx, targets_dy, targets_dw, targets_dh), dim=1)
 
         return targets
 
@@ -80,8 +80,7 @@ class ATSSHead(torch.nn.Module):
         super(ATSSHead, self).__init__()
         self.cfg = cfg
         num_classes = cfg.MODEL.ATSS.NUM_CLASSES - 1
-        num_anchors = len(cfg.MODEL.ATSS.ASPECT_RATIOS) * \
-            cfg.MODEL.ATSS.SCALES_PER_OCTAVE
+        num_anchors = len(cfg.MODEL.ATSS.ASPECT_RATIOS) * cfg.MODEL.ATSS.SCALES_PER_OCTAVE
 
         cls_tower = []
         bbox_tower = []
@@ -155,6 +154,8 @@ class ATSSHead(torch.nn.Module):
             logits.append(self.cls_logits(cls_tower))
 
             bbox_pred = self.scales[l](self.bbox_pred(box_tower))
+            if self.cfg.MODEL.ATSS.REGRESSION_TYPE == 'POINT':
+                bbox_pred = F.relu(bbox_pred)
             bbox_reg.append(bbox_pred)
 
             centerness.append(self.centerness(box_tower))
@@ -175,7 +176,7 @@ class ATSSModule(torch.nn.Module):
     def forward(self, images, features, targets=None):
         box_cls, box_regression, centerness = self.head(features)
         anchors = self.anchor_generator(images, features)
-
+ 
         if self.training:
             return self._forward_train(box_cls, box_regression, centerness, targets, anchors)
         else:
@@ -193,6 +194,7 @@ class ATSSModule(torch.nn.Module):
         return None, losses
 
     def _forward_test(self, box_cls, box_regression, centerness, anchors):
-        boxes = self.box_selector_test(
-            box_cls, box_regression, centerness, anchors)
+        boxes = self.box_selector_test(box_cls, box_regression, centerness, anchors)
         return boxes, {}
+
+

@@ -12,6 +12,7 @@ INF = 100000000
 def get_num_gpus():
     return int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
 
+
 def reduce_sum(tensor):
     if get_num_gpus() <= 1:
         return tensor
@@ -20,33 +21,9 @@ def reduce_sum(tensor):
     dist.all_reduce(tensor, op=dist.reduce_op.SUM)
     return tensor
 
-import torch
-from torch import nn
-import numpy as np
-
-class SigmoidFocalLoss(nn.Module):
-    def __init__(self, gamma, alpha):
-        super(SigmoidFocalLoss, self).__init__()
-        self.gamma = gamma
-        self.alpha = alpha
-
-    def forward(self, logits, targets):
-        num_classes = logits.shape[1]
-        dtype = targets.dtype
-        device = targets.device
-        class_range = torch.arange(1, num_classes+1, dtype=dtype, device=device).unsqueeze(0)
-
-        t = targets.unsqueeze(1)
-        p = torch.sigmoid(logits)
-        p = torch.clamp(p, min=1e-20)
-        term1 = (1 - p) ** self.gamma * torch.log(p)
-        term2 = p ** self.gamma * torch.log(1 - p)
-
-        loss = -(t == class_range).float() * term1 * self.alpha - ((t != class_range) * (t >= 0)).float() * term2 * (1 - self.alpha)
-        return loss.sum()
-
 
 class ATSSLossComputation(object):
+
     def __init__(self, cfg, box_coder):
         self.cfg = cfg
         self.cls_loss_func = SigmoidFocalLoss(cfg.MODEL.ATSS.LOSS_GAMMA, cfg.MODEL.ATSS.LOSS_ALPHA)
@@ -107,7 +84,6 @@ class ATSSLossComputation(object):
             anchors_per_im = cat_boxlist(anchors[im_i])
             num_gt = bboxes_per_im.shape[0]
 
-            
             num_anchors_per_loc = len(self.cfg.MODEL.ATSS.ASPECT_RATIOS) * self.cfg.MODEL.ATSS.SCALES_PER_OCTAVE
 
             num_anchors_per_level = [len(anchors_per_level.bbox) for anchors_per_level in anchors[im_i]]
@@ -163,11 +139,10 @@ class ATSSLossComputation(object):
             ious_inf = ious_inf.view(num_gt, -1).t()
 
             anchors_to_gt_values, anchors_to_gt_indexs = ious_inf.max(dim=1)
-
             cls_labels_per_im = labels_per_im[anchors_to_gt_indexs]
             cls_labels_per_im[anchors_to_gt_values == -INF] = 0
             matched_gts = bboxes_per_im[anchors_to_gt_indexs]
-            
+
             reg_targets_per_im = self.box_coder.encode(matched_gts, anchors_per_im.bbox)
             cls_labels.append(cls_labels_per_im)
             reg_targets.append(reg_targets_per_im)
@@ -225,6 +200,7 @@ class ATSSLossComputation(object):
             centerness_loss = centerness_flatten.sum()
 
         return cls_loss, reg_loss * self.cfg.MODEL.ATSS.REG_LOSS_WEIGHT, centerness_loss
+
 
 def make_atss_loss_evaluator(cfg, box_coder):
     loss_evaluator = ATSSLossComputation(cfg, box_coder)

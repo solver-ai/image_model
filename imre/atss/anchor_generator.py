@@ -7,7 +7,12 @@ from torch import nn
 
 from imre.module.utils import BoxList
 
+
 class BufferList(nn.Module):
+    """
+    Similar to nn.ParameterList, but for buffers
+    """
+
     def __init__(self, buffers=None):
         super(BufferList, self).__init__()
         if buffers is not None:
@@ -27,6 +32,11 @@ class BufferList(nn.Module):
 
 
 class AnchorGenerator(nn.Module):
+    """
+    For a set of image sizes and feature maps, computes a set
+    of anchors
+    """
+
     def __init__(
         self,
         sizes=(128, 256, 512),
@@ -103,8 +113,7 @@ class AnchorGenerator(nn.Module):
         grid_sizes = [feature_map.shape[-2:] for feature_map in feature_maps]
         anchors_over_all_feature_maps = self.grid_anchors(grid_sizes)
         anchors = []
-        for i, image in enumerate(image_list):
-            _, image_height, image_width = image.size()
+        for i, (image_height, image_width) in enumerate(image_list.image_sizes):
             anchors_in_image = []
             for anchors_per_feature_map in anchors_over_all_feature_maps:
                 boxlist = BoxList(
@@ -114,6 +123,7 @@ class AnchorGenerator(nn.Module):
                 anchors_in_image.append(boxlist)
             anchors.append(anchors_in_image)
         return anchors
+
 
 def make_anchor_generator_atss(config):
     anchor_sizes = config.MODEL.ATSS.ANCHOR_SIZES
@@ -136,8 +146,7 @@ def make_anchor_generator_atss(config):
         tuple(new_anchor_sizes), aspect_ratios, anchor_strides, straddle_thresh
     )
     return anchor_generator
-
-
+    
 def generate_anchors(
     stride=16, sizes=(32, 64, 128, 256, 512), aspect_ratios=(0.5, 1, 2)
 ):

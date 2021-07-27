@@ -19,8 +19,8 @@ IMG_TRANSFORMS_PIPELINE = {
     "train" : A.Compose([
         A.LongestMaxSize(512),
         A.PadIfNeeded(
-            min_height=640,
-            min_width=640, 
+            min_height=512,
+            min_width=512, 
             position='top_left', 
             border_mode=cv2.BORDER_CONSTANT),
         A.Normalize(),
@@ -30,8 +30,8 @@ IMG_TRANSFORMS_PIPELINE = {
     "valid" : A.Compose([
         A.LongestMaxSize(512),
         A.PadIfNeeded(
-            min_height=640,
-            min_width=640, 
+            min_height=512,
+            min_width=512, 
             position='top_left', 
             border_mode=cv2.BORDER_CONSTANT),
         A.Normalize(),

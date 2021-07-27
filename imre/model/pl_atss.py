@@ -42,11 +42,13 @@ class ATSSModel(pl.LightningModule):
         
         losses = {
             "loss": loss_box_cls + loss_box_reg + loss_centerness,
-            "loss_reg": loss_box_reg,
-            "loss_cls": loss_box_cls,
-            "loss_centerness": loss_centerness,
+            "progress_bar": {
+                "loss_reg": loss_box_reg,
+                "loss_cls": loss_box_cls,
+                "loss_centerness": loss_centerness,
+            },
         }
-        print(losses)
+
         return losses
     
     def validation_step(self, batch, batch_idx):
@@ -61,18 +63,25 @@ class ATSSModel(pl.LightningModule):
                 box_cls, box_regression, box_centerness, targets, anchors
             )
             
-            losses = {
-                "loss": loss_box_cls + loss_box_reg + loss_centerness,
+        losses = {
+            "loss": loss_box_cls + loss_box_reg + loss_centerness,
+            "progress_bar": {
                 "loss_reg": loss_box_reg,
                 "loss_cls": loss_box_cls,
                 "loss_centerness": loss_centerness,
-            }
+            },
+        }
         
         boxes = self.box_selector_test(
             box_cls, box_regression, box_centerness,anchors
         )
-        print(losses)
+
         return boxes, losses
+
+    def validation_epoch_end(self, outputs: EPOCH_OUTPUT) -> None:
+        print(outputs)
+
+        return 
 
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(self.parameters(), lr=self.cfg.SOLVER.BASE_LR, momentum=self.cfg.SOLVER.MOMENTUM)
